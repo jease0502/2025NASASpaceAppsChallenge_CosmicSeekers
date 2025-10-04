@@ -138,23 +138,30 @@ class ExoplanetDataProcessor:
         
         # One-hot encoding for telescope
         training_df = pd.get_dummies(training_df, columns=['source_telescope'], drop_first=True)
+        # 提取特徵和標籤
         X = training_df.drop(columns=['disposition', 'source_id'])
         y = training_df['disposition']
         self.feature_names = X.columns.tolist()
+
+        # 分割訓練集和測試集
         X_train, X_test, self.y_train, self.y_test = train_test_split(
-            X, y, test_size=Config.TEST_SIZE, random_state=Config.RANDOM_STATE, stratify=y)
+            X, y, test_size=Config.TEST_SIZE, random_state=Config.RANDOM_STATE, stratify=y
+        )
+
+        # 數據預處理：缺失值填充和標準化
         self.imputer = SimpleImputer(strategy='median')
         X_train_imputed = self.imputer.fit_transform(X_train)
         X_test_imputed = self.imputer.transform(X_test)
+
         self.scaler = StandardScaler()
         self.X_train_scaled = self.scaler.fit_transform(X_train_imputed)
         self.X_test_scaled = self.scaler.transform(X_test_imputed)
-        if not candidate_df.empty:
-            candidate_features = candidate_df.drop(columns=['disposition', 'source_id'], errors='ignore')
-            candidate_features = candidate_features.reindex(columns=self.feature_names, fill_value=0)
-            candidate_imputed = self.imputer.transform(candidate_features)
-            self.candidate_df_processed = self.scaler.transform(candidate_imputed)
+
         print("✅ 訓練資料預處理與分割完成。")
+        print(f"   - 訓練集大小: {self.X_train_scaled.shape}")
+        print(f"   - 測試集大小: {self.X_test_scaled.shape}")
+        print(f"   - 類別分布: {pd.Series(self.y_train).value_counts().to_dict()}")
+        
         return True
 
     def run(self):
@@ -323,23 +330,32 @@ if __name__ == "__main__":
         processor.X_train_scaled, processor.y_train, X_test_sample, Config.N_FEATURES_TO_DISPLAY
     )
 
-    # 7. 使用最佳模型預測候選行星
+    # 7. 顯示混淆矩陣的詳細分析
     print("\n" + "="*70)
-    print(f"🚀 正在使用最佳模型 '{best_model_name}' 為 'CANDIDATE' 候選天體進行預測...")
+    print(f"📊 混淆矩陣分析")
     print("="*70)
-    if processor.candidate_df_processed is not None and len(processor.candidate_df_processed) > 0:
-        candidate_predictions = best_model.predict_proba(processor.candidate_df_processed)[:, 1]
-        prediction_results = processor.candidate_info.copy()
-        prediction_results['Prediction_Score'] = candidate_predictions
-        top_candidates = prediction_results.sort_values(by='Prediction_Score', ascending=False)
-        print("   ✅ 預測完成。")
-        print("\n" + "="*70)
-        print(f"🎯 前 {Config.N_TOP_CANDIDATES} 名最可能是真實行星的 CANDIDATE 候選天體")
-        print("="*70)
-        print(top_candidates.head(Config.N_TOP_CANDIDATES).to_string(index=False))
-        print("="*70)
-    else:
-        print("   - ℹ️ 未找到任何標記為 'CANDIDATE' 的資料可供預測。")
+    
+    cm_df = pd.DataFrame(
+        cm,
+        index=['實際: ' + tn for tn in target_names],
+        columns=['預測: ' + tn for tn in target_names]
+    )
+    print("\n混淆矩陣:")
+    print(cm_df)
+    
+    # 計算每個類別的精確度、召回率和F1分數
+    precision = np.diag(cm) / np.sum(cm, axis=0)
+    recall = np.diag(cm) / np.sum(cm, axis=1)
+    f1 = 2 * (precision * recall) / (precision + recall)
+    
+    print("\n各類別詳細指標:")
+    metrics_df = pd.DataFrame({
+        '精確度': precision,
+        '召回率': recall,
+        'F1分數': f1
+    }, index=target_names)
+    print(metrics_df.round(4))
+    print("="*70)
 
     # 8. 儲存預處理工具
     print("\n" + "="*70)
