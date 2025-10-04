@@ -266,7 +266,7 @@ def home():
 def partials(page_name):
     return render_template(f'partials/{page_name}.html')
 
-@app.route('/download_demo/<path:filename>')
+@app.route('/demo/<path:filename>')
 def download_demo(filename):
     return send_from_directory('static/demo', filename)
 
