@@ -2,44 +2,58 @@
     "model_name": "Logisticregression",
     "classification_report": {
         "FALSE POSITIVE": {
-            "precision": 0.8771132980065607,
-            "recall": 0.7109838412763346,
-            "f1-score": 0.7853592408495256,
+            "precision": 0.7923984272608126,
+            "recall": 0.6183268562078135,
+            "f1-score": 0.6946231617647058,
             "support": 4889.0
         },
-        "CONFIRMED": {
-            "precision": 0.6832548755884331,
-            "recall": 0.8622347949080622,
-            "f1-score": 0.7623811905952976,
-            "support": 3535.0
+        "CANDIDATE": {
+            "precision": 0.7028862478777589,
+            "recall": 0.6841844323252355,
+            "f1-score": 0.6934092622058454,
+            "support": 6051.0
         },
-        "accuracy": 0.7744539411206078,
+        "CONFIRMED": {
+            "precision": 0.522751100859719,
+            "recall": 0.7054329371816639,
+            "f1-score": 0.6005058412621944,
+            "support": 3534.0
+        },
+        "accuracy": 0.6671272626779052,
         "macro avg": {
-            "precision": 0.780184086797497,
-            "recall": 0.7866093180921985,
-            "f1-score": 0.7738702157224115,
-            "support": 8424.0
+            "precision": 0.6726785919994303,
+            "recall": 0.6693147419049043,
+            "f1-score": 0.6628460884109152,
+            "support": 14474.0
         },
         "weighted avg": {
-            "precision": 0.7957636395013279,
-            "recall": 0.7744539411206078,
-            "f1-score": 0.7757168610241818,
-            "support": 8424.0
+            "precision": 0.6891393524405609,
+            "recall": 0.6671272626779052,
+            "f1-score": 0.6711358108674736,
+            "support": 14474.0
         }
     },
     "confusion_matrix": {
         "labels": [
             "FALSE POSITIVE",
+            "CANDIDATE",
             "CONFIRMED"
         ],
         "matrix": [
             [
-                3476,
-                1413
+                3023,
+                977,
+                889
             ],
             [
-                487,
-                3048
+                524,
+                4140,
+                1387
+            ],
+            [
+                268,
+                773,
+                2493
             ]
         ]
     }

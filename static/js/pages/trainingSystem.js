@@ -55,19 +55,27 @@ function renderHyperparameterForm(modelName, container) {
 }
 
 function renderConfusionMatrix(matrixData) {
-    if (!matrixData || !matrixData.matrix) return '<p>Unable to display confusion matrix.</p>';
+    if (!matrixData || !Array.isArray(matrixData.matrix)) return '<p>Unable to display confusion matrix.</p>';
     const matrix = matrixData.matrix;
-    const tn = matrix[0][0]; const fp = matrix[0][1];
-    const fn = matrix[1][0]; const tp = matrix[1][1];
+    let labels = Array.isArray(matrixData.labels) ? matrixData.labels : [];
+    const n = matrix.length;
+    if (!labels || labels.length !== n) {
+        labels = Array.from({ length: n }, (_, i) => `Class ${i}`);
+    }
+
+    const headerCells = labels.map(label => `<th class="cm-label">${label}</th>`).join('');
+    const rowsHtml = matrix.map((row, i) => {
+        const cells = row.map(val => `<td class="cm-cell">${val}</td>`).join('');
+        return `<tr><th class="cm-label">${labels[i]}</th>${cells}</tr>`;
+    }).join('');
 
     return `
         <div class="mt-4">
             <h4 class="text-sm font-bold text-gray-400 mt-4 mb-2">Training Evaluation (Confusion Matrix)</h4>
             <table class="confusion-matrix-table">
-                <tr><td class="cm-empty"></td><th colspan="2" class="cm-header">Predicted</th></tr>
-                <tr><th class="cm-header cm-header-actual"><span>Actual</span></th><th class="cm-label">Not Planet</th><th class="cm-label">Planet</th></tr>
-                <tr><th class="cm-label">Not Planet</th><td class="cm-cell tn" title="True Negative">${tn}</td><td class="cm-cell fp" title="False Positive">${fp}</td></tr>
-                <tr><th class="cm-label">Planet</th><td class="cm-cell fn" title="False Negative">${fn}</td><td class="cm-cell tp" title="True Positive">${tp}</td></tr>
+                <tr><td class="cm-empty"></td><th colspan="${n}" class="cm-header">Predicted</th></tr>
+                <tr><th class="cm-header cm-header-actual"><span>Actual</span></th>${headerCells}</tr>
+                ${rowsHtml}
             </table>
             <p class="text-xs text-gray-500 mt-2">This matrix shows the model performance on the test set. You can now use this trained model for predictions in the Exploration page.</p>
         </div>

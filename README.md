@@ -116,8 +116,8 @@ Successful response:
   "message": "模型 RandomForest 訓練體驗完成！",
   "log_output": "...training logs...",
   "confusion_matrix": {
-    "matrix": [[TN, FP],[FN, TP]],
-    "labels": ["FALSE POSITIVE", "CONFIRMED"]
+    "labels": ["FALSE POSITIVE", "CANDIDATE", "CONFIRMED"],
+    "matrix": [[TN, FP, X],[FN, TP, Y],[Z, W, U]]
   }
 }
 ```

@@ -2,44 +2,58 @@
     "model_name": "Lightgbm",
     "classification_report": {
         "FALSE POSITIVE": {
-            "precision": 0.9846345514950167,
-            "recall": 0.9699325015340561,
-            "f1-score": 0.9772282328696548,
+            "precision": 0.9340241065764432,
+            "recall": 0.9034567396195541,
+            "f1-score": 0.9184861717612809,
             "support": 4889.0
         },
-        "CONFIRMED": {
-            "precision": 0.9592572062084257,
-            "recall": 0.979066478076379,
-            "f1-score": 0.9690606187876243,
-            "support": 3535.0
+        "CANDIDATE": {
+            "precision": 0.922037250700511,
+            "recall": 0.9244752933399438,
+            "f1-score": 0.9232546624855588,
+            "support": 6051.0
         },
-        "accuracy": 0.9737654320987654,
+        "CONFIRMED": {
+            "precision": 0.9110929853181077,
+            "recall": 0.9482173174872666,
+            "f1-score": 0.9292845257903494,
+            "support": 3534.0
+        },
+        "accuracy": 0.9231725853254111,
         "macro avg": {
-            "precision": 0.9719458788517212,
-            "recall": 0.9744994898052175,
-            "f1-score": 0.9731444258286395,
-            "support": 8424.0
+            "precision": 0.9223847808650206,
+            "recall": 0.925383116815588,
+            "f1-score": 0.9236751200123964,
+            "support": 14474.0
         },
         "weighted avg": {
-            "precision": 0.9739853449912061,
-            "recall": 0.9737654320987654,
-            "f1-score": 0.9738008212148616,
-            "support": 8424.0
+            "precision": 0.9234139747930921,
+            "recall": 0.9231725853254111,
+            "f1-score": 0.92311623397707,
+            "support": 14474.0
         }
     },
     "confusion_matrix": {
         "labels": [
             "FALSE POSITIVE",
+            "CANDIDATE",
             "CONFIRMED"
         ],
         "matrix": [
             [
-                4742,
-                147
+                4417,
+                330,
+                142
             ],
             [
-                74,
-                3461
+                272,
+                5594,
+                185
+            ],
+            [
+                40,
+                143,
+                3351
             ]
         ]
     }

@@ -2,44 +2,58 @@
     "model_name": "Randomforest",
     "classification_report": {
         "FALSE POSITIVE": {
-            "precision": 0.961764705882353,
-            "recall": 0.802618122315402,
-            "f1-score": 0.8750139368937451,
+            "precision": 0.8363425925925926,
+            "recall": 0.7390059316833708,
+            "f1-score": 0.7846671734173091,
             "support": 4889.0
         },
-        "CONFIRMED": {
-            "precision": 0.7778545119705341,
-            "recall": 0.9558698727015559,
-            "f1-score": 0.8577230613021957,
-            "support": 3535.0
+        "CANDIDATE": {
+            "precision": 0.7978685612788632,
+            "recall": 0.742356635266898,
+            "f1-score": 0.7691122335416487,
+            "support": 6051.0
         },
-        "accuracy": 0.8669278252611586,
+        "CONFIRMED": {
+            "precision": 0.6361626878868258,
+            "recall": 0.8143746462931523,
+            "f1-score": 0.7143211715065773,
+            "support": 3534.0
+        },
+        "accuracy": 0.7588088987149372,
         "macro avg": {
-            "precision": 0.8698096089264435,
-            "recall": 0.8792439975084789,
-            "f1-score": 0.8663684990979703,
-            "support": 8424.0
+            "precision": 0.7567912805860938,
+            "recall": 0.765245737747807,
+            "f1-score": 0.7560335261551784,
+            "support": 14474.0
         },
         "weighted avg": {
-            "precision": 0.8845896660582456,
-            "recall": 0.8669278252611586,
-            "f1-score": 0.8677580910703682,
-            "support": 8424.0
+            "precision": 0.7713818252366746,
+            "recall": 0.7588088987149372,
+            "f1-score": 0.7609884590370308,
+            "support": 14474.0
         }
     },
     "confusion_matrix": {
         "labels": [
             "FALSE POSITIVE",
+            "CANDIDATE",
             "CONFIRMED"
         ],
         "matrix": [
             [
-                3924,
-                965
+                3613,
+                623,
+                653
             ],
             [
-                156,
-                3379
+                566,
+                4492,
+                993
+            ],
+            [
+                141,
+                515,
+                2878
             ]
         ]
     }
