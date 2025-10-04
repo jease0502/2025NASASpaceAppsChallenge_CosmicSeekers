@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Exoplanet Explorer</title>
+    
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='textures/nasa_logo.png') }}">
+    
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet" />
+
+    <style>
+        header { border-bottom-color: #343434 !important; }
+        .nav-item { display: flex; align-items: center; justify-content: center; padding: 0.5rem; text-align: center; font-size: 0.9rem; white-space: nowrap; background-color: transparent; border-radius: 0.5rem; cursor: pointer; transition: background-color 0.2s; gap: 0.25rem; color: inherit; text-decoration: none; border: none; }
+        .nav-item:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .nav-item-search { position: relative; }
+        #nav-links .nav-item { min-width: 80px; font-size: 0.8rem !important; }
+        #mobile-nav:not(.hidden) { display: flex; flex-direction: column; align-items: flex-start; }
+        #mobile-nav .nav-item { width: auto; justify-content: flex-start; padding: 0.5rem 0.75rem; }
+        #mobile-nav .nav-item-search { width: 100%; }
+        
+        #camera-controls.ui-element { position: absolute; bottom: 1.5rem; right: 1.5rem; width: auto; background-color: rgba(10, 10, 20, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(52, 211, 153, 0.2); border-radius: 12px; padding: 8px; padding-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); user-select: none; -webkit-user-select: none; }
+        .drag-handle { position: absolute; top: 0; left: 0; width: 100%; height: 20px; cursor: move; }
+        #camera-controls .control-btn-grid { gap: 4px; }
+        #camera-controls .d-pad { grid-template-rows: repeat(3, 32px); grid-template-columns: repeat(3, 32px); }
+        #camera-controls .zoom-controls { gap: 4px; }
+        #camera-controls .camera-btn { width: 32px; height: 32px; padding: 0; }
+        #camera-controls .camera-btn .material-symbols-outlined { font-size: 20px; }
+        .music-controls { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(52, 211, 153, 0.2); }
+        .music-controls button { background: transparent; border: none; color: #e5e7eb; cursor: pointer; padding: 4px; border-radius: 9999px; transition: background-color 0.2s; }
+        .music-controls button:hover { background-color: rgba(255, 255, 255, 0.1); }
+        #current-track-name { font-size: 12px; color: #9ca3af; font-family: monospace; }
+        
+        .system-list { background-color: rgba(46, 46, 46, 0.5); backdrop-filter: blur(8px); position: absolute; right: 0; margin-top: 0.5rem; width: 16rem; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); z-index: 50; display: flex; flex-direction: column; }
+        .system-list input { padding: 0.5rem; background-color: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(52, 211, 153, 0.3); }
+        #system-list-items a, #mobile-system-list-items a { display: block; width: 100%; padding: 0.5rem 0.75rem; border-radius: 0.25rem; transition: background-color 0.2s; }
+        #system-list-items a:hover, #mobile-system-list-items a:hover { background-color: rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="dark bg-background-dark font-display text-gray-200">
+    <div class="flex flex-col min-h-screen">
+        <header class="flex items-center justify-between px-6 py-4 border-b z-20 bg-background-dark/50 backdrop-blur-sm fixed top-0 w-full">
+            <a id="home-btn" href="#" class="flex items-center gap-2 cursor-pointer"><img src="{{ url_for('static', filename='textures/nasa_logo.png') }}" alt="NASA Logo" class="w-8 h-8"><h1 class="text-xl font-bold text-white">Exoplanet Explorer</h1></a>
+            <div class="flex items-center gap-2 ml-auto">
+                <div id="nav-container" class="relative">
+                    <div id="nav-links" class="hidden md:flex items-center gap-2"></div>
+                    <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg hover:bg-white/10"><span class="material-symbols-outlined">menu</span></button>
+                </div>
+            </div>
+        </header>
+        <div id="mobile-nav" class="hidden fixed top-20 right-4 w-64 bg-background-dark/90 backdrop-blur-lg border border-primary/30 rounded-lg shadow-xl z-50 p-4 gap-3"></div>
+        <main id="main-content" class="flex-grow flex items-center justify-center relative overflow-hidden">
+             <div id="scene-container"></div>
+             <div id="page-container" class="w-full h-full absolute top-0 left-0"></div>
+        </main>
+    </div>
+
+    <div id="model-stats-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        
+        <div id="model-stats-content" class="bg-[#2E2E2E]/50 border border-white/20 rounded-xl p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto transform scale-95 transition-all duration-300">
+            
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-green-400 mb-2">Model Evaluation Report</h2>
+                    <p class="text-gray-400 text-sm">Detailed performance metrics for the pre-trained models.</p>
+                </div>
+                <button id="modal-close-btn" class="p-2 rounded-full hover:bg-white/10 transition-colors">
+                    <span class="material-symbols-outlined text-2xl">close</span>
+                </button>
+            </div>
+            
+            <div id="model-cards-container" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+        </div>
+    </div>
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

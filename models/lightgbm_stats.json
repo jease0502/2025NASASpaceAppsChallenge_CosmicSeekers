@@ -1,0 +1,46 @@
+{
+    "model_name": "Lightgbm",
+    "classification_report": {
+        "FALSE POSITIVE": {
+            "precision": 0.9846345514950167,
+            "recall": 0.9699325015340561,
+            "f1-score": 0.9772282328696548,
+            "support": 4889.0
+        },
+        "CONFIRMED": {
+            "precision": 0.9592572062084257,
+            "recall": 0.979066478076379,
+            "f1-score": 0.9690606187876243,
+            "support": 3535.0
+        },
+        "accuracy": 0.9737654320987654,
+        "macro avg": {
+            "precision": 0.9719458788517212,
+            "recall": 0.9744994898052175,
+            "f1-score": 0.9731444258286395,
+            "support": 8424.0
+        },
+        "weighted avg": {
+            "precision": 0.9739853449912061,
+            "recall": 0.9737654320987654,
+            "f1-score": 0.9738008212148616,
+            "support": 8424.0
+        }
+    },
+    "confusion_matrix": {
+        "labels": [
+            "FALSE POSITIVE",
+            "CONFIRMED"
+        ],
+        "matrix": [
+            [
+                4742,
+                147
+            ],
+            [
+                74,
+                3461
+            ]
+        ]
+    }
+}

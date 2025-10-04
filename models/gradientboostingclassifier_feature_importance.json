@@ -1,0 +1,18 @@
+{
+    "planet_radius": 17.878021813813856,
+    "period": 12.784201498525277,
+    "equilibrium_temp": 10.789503283897146,
+    "planet_to_star_radius_ratio": 10.03659550636614,
+    "duration": 8.463575689818144,
+    "depth": 7.40599942242382,
+    "transit_midpoint": 5.952691567761885,
+    "insolation_flux": 5.045871770318279,
+    "stellar_temp": 4.590332179636469,
+    "dec": 4.558807746545427,
+    "ra": 4.508717180245854,
+    "stellar_magnitude": 3.776868670038791,
+    "stellar_radius": 1.9234329548096902,
+    "stellar_logg": 1.6458040589455394,
+    "source_telescope_TESS": 0.5149681057043056,
+    "snr": 0.12460855114937422
+}

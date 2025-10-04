@@ -1,0 +1,77 @@
+<div class="page-content-container p-8 pt-24 text-white">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex items-center justify-between mb-8">
+            <h1 class="text-4xl font-bold">Online Training & Data Processing</h1>
+            <a href="#" id="back-to-explorer-btn" class="flex items-center gap-2 px-4 py-2 bg-transparent text-white rounded-lg text-sm hover:bg-white/10 transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+                <span>Back to Explorer</span>
+            </a>
+        </div>
+        
+        <div class="mb-6 p-6 bg-[#2E2E2E]/50 rounded-xl border border-white/20">
+            <h2 class="text-xl font-bold text-gray-300 mb-3">Download Demo Datasets</h2>
+            <p class="text-gray-400 mb-4">
+                If you don't have your own dataset, you can download our TESS or KOI sample files to experience the training process.
+            </p>
+            <div class="flex items-center gap-4">
+                <a href="/download_demo/tess_demo.csv" download="tess_demo.csv" class="action-btn bg-transparent text-white rounded-lg hover:bg-white/10 transition-colors flex-1 flex items-center justify-center gap-2 border border-white/20 py-3">
+                    <span class="material-symbols-outlined">download</span>
+                    <span>Download TESS Demo</span>
+                </a>
+                <a href="/download_demo/koi_demo.csv" download="koi_demo.csv" class="action-btn bg-transparent text-white rounded-lg hover:bg-white/10 transition-colors flex-1 flex items-center justify-center gap-2 border border-white/20 py-3">
+                    <span class="material-symbols-outlined">download</span>
+                    <span>Download KOI Demo</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="mb-10 p-6 bg-[#2E2E2E]/50 rounded-xl border border-white/20">
+            <h2 class="text-xl font-bold text-gray-300 mb-3">Step 1: Upload & Process Data</h2>
+            <p class="text-gray-400 mb-4">
+                Upload your CSV file in TESS or KOI format. The system will automatically validate, clean, analyze, and save the processed file for model training.
+            </p>
+            <div class="flex items-center gap-4">
+                <label class="action-btn bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors px-6 py-3 flex items-center justify-center gap-2 border border-white/20 cursor-pointer">
+                    <span class="material-symbols-outlined">attach_file</span>
+                    <span>Choose File</span>
+                    <input type="file" id="dataset-file-input" class="hidden" accept=".csv">
+                </label>
+                <span id="file-name-display" class="text-gray-400 text-sm truncate">No file selected</span>
+                
+                <button id="upload-and-process-btn" class="action-btn bg-transparent text-white rounded-lg hover:bg-white/10 transition-colors px-6 flex items-center justify-center gap-2 border border-white/20 py-3 ml-auto">
+                    <span class="material-symbols-outlined">upload</span>
+                    <span>Upload & Process</span>
+                </button>
+                </div>
+            <div id="process-result-container" class="result-container mt-4"></div>
+        </div>
+
+        <div id="training-step-container" class="hidden p-6 bg-[#2E2E2E]/50 rounded-xl border border-white/20">
+            <h2 class="text-2xl font-bold text-green-400 mb-3">Step 2: Train a New Model</h2>
+            <p class="text-gray-400 mb-4">
+                Data processed successfully! Now you can select a model and tune its hyperparameters to train a new model.
+            </p>
+            <div class="mb-6">
+                <label for="model-selector" class="block text-sm font-medium text-gray-300 mb-2">Select Model</label>
+                <div class="relative custom-select-wrapper">
+                    <select id="model-selector" class="w-full bg-gray-700 border border-gray-600 rounded-md text-sm p-2 appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50">
+                        <option value="RandomForest">Random Forest</option>
+                        <option value="GradientBoosting">Gradient Boosting</option>
+                        <option value="LightGBM">LightGBM</option>
+                        <option value="LogisticRegression">Logistic Regression</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                        <span class="material-symbols-outlined">expand_more</span>
+                    </div>
+                </div>
+                </div>
+            <div id="hyperparameter-form" class="mb-6 grid grid-cols-1 md-grid-cols-2 gap-x-6 gap-y-4">
+                </div>
+            <button id="start-training-btn" class="action-btn bg-transparent text-white rounded-lg hover:bg-white/10 transition-colors text-base py-3 w-full flex items-center justify-center gap-2 border border-white/20">
+                <span class="material-symbols-outlined">model_training</span>
+                <span>Start Training</span>
+            </button>
+            <div id="training-result-container" class="result-container mt-4"></div>
+        </div>
+    </div>
+</div>

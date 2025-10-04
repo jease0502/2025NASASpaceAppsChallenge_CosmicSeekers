@@ -1,0 +1,32 @@
+<div class="w-full h-full relative">
+
+    <div class="absolute top-28 right-4 z-50">
+        <a href="#" id="back-to-explorer-btn" 
+           class="flex items-center gap-2 px-4 py-2 bg-gray-800/50 backdrop-blur-sm rounded-lg text-sm hover:bg-gray-700/70 transition-colors text-white border border-white/20">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Back to Explorer</span>
+        </a>
+    </div>
+
+    <div id="kepler-container" class="page-content-container p-4 flex flex-col h-full">
+        <!-- telescope overlay (JS會動態建立) -->
+        <div class="absolute inset-0 z-10 pointer-events-none">
+            <img src="/static/textures/telescope.png" class="w-full h-full object-cover" alt="Telescope View">
+        </div>
+
+        <!-- Light Curve -->
+        <div id="light-curve-container" 
+             class="w-full h-64 bg-background-dark/50 backdrop-blur-sm rounded-lg border border-primary/20 shadow-lg relative z-20 overflow-hidden">
+            <canvas id="light-curve-canvas" class="w-full h-full"></canvas>
+        </div>
+
+        <!-- Speed Control -->
+        <div id="speed-control-container" 
+             class="max-w-md mx-auto flex items-center justify-center gap-4 p-2 text-white z-20">
+            <span class="material-symbols-outlined">rocket_launch</span>
+            <input type="range" id="speed-slider" min="1" max="100" value="5" class="w-48">
+            <span id="speed-value" class="font-mono w-16 text-center">10x</span>
+        </div>
+    </div>
+    
+</div>

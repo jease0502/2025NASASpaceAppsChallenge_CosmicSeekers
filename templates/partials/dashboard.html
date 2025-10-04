@@ -1,0 +1,39 @@
+<div id="dashboard-container" class="dashboard-container">
+    <div class="dashboard-content">
+        <div>
+            <div class="dashboard-title">
+                <h2 id="dashboard-title-kic">Analysis Dashboard</h2>
+                <a href="#" id="back-to-explorer-btn" class="dashboard-close-btn flex items-center gap-2 px-4 py-2 bg-transparent text-white rounded-lg text-sm hover:bg-white/10 transition-colors">
+                    <span class="material-symbols-outlined">public</span>
+                    <span>Main Explorer</span>
+                </a>
+            </div>
+            <div id="planet-selector-container"></div>
+        </div>
+        <div class="dashboard-controls">
+            <div class="control-item"><label for="planet_radius">Planet Radius (Earth)</label><input type="range" id="planet_radius" min="0.1" max="50" step="0.1"><span class="value-display" id="planet_radius_val">1.0</span></div>
+            <div class="control-item"><label for="period">Orbital Period (days)</label><input type="range" id="period" min="0.1" max="1000" step="0.1"><span class="value-display" id="period_val">10.0</span></div>
+            <div class="control-item"><label for="equilibrium_temp">Planet Temp (K)</label><input type="range" id="equilibrium_temp" min="50" max="3000" step="1"><span class="value-display" id="equilibrium_temp_val">300</span></div>
+            <div class="control-item"><label for="duration">Transit Duration (hrs)</label><input type="range" id="duration" min="0.1" max="20" step="0.1"><span class="value-display" id="duration_val">2.0</span></div>
+            <div class="control-item"><label for="insolation_flux">Insolation Flux (Earth)</label><input type="range" id="insolation_flux" min="0" max="10000" step="1"><span class="value-display" id="insolation_flux_val">1.0</span></div>
+            <div class="control-item"><label for="depth">Transit Depth (ppm)</label><input type="range" id="depth" min="10" max="200000" step="10"><span class="value-display" id="depth_val">1000</span></div>
+            <div class="control-item"><label for="snr">Transit S/N</label><input type="range" id="snr" min="1" max="1000" step="1"><span class="value-display" id="snr_val">25</span></div>
+            <div class="control-item"><label for="transit_midpoint">Transit Midpoint (BJD)</label><input type="range" id="transit_midpoint" min="100" max="3000" step="1"><span class="value-display" id="transit_midpoint_val">130</span></div>
+            <div class="control-item"><label for="stellar_temp">Star Temp (K)</label><input type="range" id="stellar_temp" min="2500" max="10000" step="10"><span class="value-display" id="stellar_temp_val">5778</span></div>
+            <div class="control-item"><label for="stellar_radius">Star Radius (Solar)</label><input type="range" id="stellar_radius" min="0.1" max="20" step="0.1"><span class="value-display" id="stellar_radius_val">1.0</span></div>
+            <div class="control-item"><label for="stellar_logg">Stellar Gravity (log g)</label><input type="range" id="stellar_logg" min="0" max="5.5" step="0.01"><span class="value-display" id="stellar_logg_val">4.5</span></div>
+        </div>
+        <div class="dashboard-result">
+            <div class="mb-4">
+                <label for="dashboard-model-selector" class="block text-sm font-medium text-gray-400 mb-1">選擇 AI 模型:</label>
+                <select id="dashboard-model-selector" class="bg-gray-700 border border-gray-600 rounded-md text-sm p-2 w-full"></select>
+            </div>
+            <h3>AI Model Predict</h3>
+            <div id="dashboard-prediction-label" class="prediction-label">...</div>
+            <div id="dashboard-confidence-text" class="confidence-text">Confidence: 0%</div>
+            <div class="confidence-bar-bg">
+                <div id="dashboard-confidence-bar" class="confidence-bar-fg"></div>
+            </div>
+        </div>
+    </div>
+</div>

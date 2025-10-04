@@ -1,0 +1,3 @@
+libgomp1
+gcc
+g++
