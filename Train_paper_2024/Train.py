@@ -128,19 +128,26 @@ class ExoplanetDataProcessor:
     def prepare_data(self):
         self.df.replace([np.inf, -np.inf], np.nan, inplace=True)
         
-        candidate_df = self.df[self.df['disposition'] == 'CANDIDATE'].copy()
-        self.candidate_info = candidate_df[['source_id', 'source_telescope']].copy()
+        # 將所有數據用於訓練，包括 CANDIDATE
+        training_df = self.df.copy()
         
-        training_df = self.df[self.df['disposition'].isin(['CONFIRMED', 'FALSE POSITIVE'])].copy()
-
         if training_df.empty:
-            print("❌ Error: No data labeled 'CONFIRMED' or 'FALSE POSITIVE' found for training.")
+            print("❌ Error: No data found for training.")
             return False
 
-        training_df['disposition'] = training_df['disposition'].map({'CONFIRMED': 1, 'FALSE POSITIVE': 0})
+        # 將 disposition 轉換為數值標籤
+        disposition_map = {
+            'CONFIRMED': 2,
+            'CANDIDATE': 1,
+            'FALSE POSITIVE': 0
+        }
+        training_df['disposition'] = training_df['disposition'].map(disposition_map)
         
+        # 保存原始標籤對應關係，用於後續報告
+        self.label_map = {v: k for k, v in disposition_map.items()}
+        
+        # One-hot encoding for telescope
         training_df = pd.get_dummies(training_df, columns=['source_telescope'], drop_first=True)
-        candidate_df = pd.get_dummies(candidate_df, columns=['source_telescope'], drop_first=True)
         
         X = training_df.drop(columns=['disposition', 'source_id'])
         y = training_df['disposition']
@@ -180,11 +187,11 @@ class ModelTrainer:
         for name, config in Config.MODELS.items():
             self.models[name] = config["model"](**config["params"])
             
-        specificity_scorer = make_scorer(recall_score, pos_label=0)
         self.scoring = {
-            'accuracy': 'accuracy', 'precision': 'precision',
-            'sensitivity_recall': 'recall', 'f1_score': 'f1',
-            'specificity': specificity_scorer
+            'accuracy': 'accuracy',
+            'precision_macro': 'precision_macro',
+            'recall_macro': 'recall_macro',
+            'f1_macro': 'f1_macro'
         }
 
     def cross_validate_models(self):
@@ -198,10 +205,9 @@ class ModelTrainer:
             )
             results[name] = {
                 'Accuracy': cv_results['test_accuracy'].mean(),
-                'Precision': cv_results['test_precision'].mean(),
-                'Sensitivity (Recall)': cv_results['test_sensitivity_recall'].mean(),
-                'F1-Score': cv_results['test_f1_score'].mean(),
-                'Specificity': cv_results['test_specificity'].mean()
+                'Macro Precision': cv_results['test_precision_macro'].mean(),
+                'Macro Recall': cv_results['test_recall_macro'].mean(),
+                'Macro F1-Score': cv_results['test_f1_macro'].mean()
             }
         print("✅ All models cross-validated.")
         return pd.DataFrame(results).T
@@ -272,7 +278,7 @@ def generate_model_stats_json(model_path, X_test, y_test):
     print("\n" + "="*70)
     print("📋 Generating model performance reports (JSON) on the test set...")
     print("="*70)
-    target_names = ['FALSE POSITIVE', 'CONFIRMED']
+    target_names = ['FALSE POSITIVE', 'CANDIDATE', 'CONFIRMED']
     
     for model_file in os.listdir(model_path):
         if model_file.endswith(".joblib") and '_model' in model_file:
@@ -349,29 +355,8 @@ if __name__ == "__main__":
         )
         
         print("\n" + "="*70)
-        print("🚀 Predicting 'CANDIDATE' exoplanets...")
+        print("✅ 模型訓練與評估完成")
         print("="*70)
-        
-        final_model_filename = f"{Config.BEST_MODEL_NAME.lower()}_model.joblib"
-        final_model = joblib.load(os.path.join(Config.MODEL_DIR, final_model_filename))
-        
-        if processor.candidate_df_processed is not None and len(processor.candidate_df_processed) > 0:
-            candidate_predictions = final_model.predict_proba(processor.candidate_df_processed)[:, 1]
-            
-            prediction_results = processor.candidate_info.copy()
-            prediction_results['Prediction_Score'] = candidate_predictions
-            
-            top_candidates = prediction_results.sort_values(by='Prediction_Score', ascending=False)
-            
-            print("   ✅ Prediction complete.")
-            print("\n" + "="*70)
-            print(f"🎯 Top {Config.N_TOP_CANDIDATES} CANDIDATEs most likely to be true planets")
-            print("   (Higher score indicates higher probability)")
-            print("="*70)
-            print(top_candidates.head(Config.N_TOP_CANDIDATES).to_string(index=False))
-            print("="*70)
-        else:
-            print("   - ℹ️ No data labeled 'CANDIDATE' found for prediction.")
 
         print("\n" + "="*70)
         print(f"💾 Saving preprocessing tools to '{Config.MODEL_DIR}' directory...")

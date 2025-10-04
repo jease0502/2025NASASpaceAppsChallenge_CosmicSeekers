@@ -42,24 +42,33 @@ class Config:
     # 警告：網格越大，搜尋時間越長！以下是供快速測試用的小網格。
     PARAM_GRIDS = {
         "LogisticRegression": {
-            "C": [0.1, 0.5, 1.0],
-            "solver": ["liblinear", "saga"],
-            "max_iter": [2000]
+            "C": [0.1, 0.5, 1.0, 2.0],
+            "solver": ["lbfgs", "saga"],
+            "max_iter": [3000],
+            "multi_class": ["multinomial"],
+            "penalty": ["l2"]
         },
         "RandomForest": {
-            "n_estimators": [200, 500],
-            "max_depth": [5, 10, None],
-            "min_samples_split": [2, 5]
+            "n_estimators": [500, 1000],
+            "max_depth": [10, 15, None],
+            "min_samples_split": [2, 5],
+            "min_samples_leaf": [1, 2],
+            "class_weight": ["balanced", "balanced_subsample"]
         },
         "GradientBoosting": {
-            "n_estimators": [200, 500],
-            "learning_rate": [0.05, 0.1],
-            "max_depth": [3, 5]
+            "n_estimators": [500, 1000],
+            "learning_rate": [0.01, 0.05, 0.1],
+            "max_depth": [5, 7],
+            "subsample": [0.8, 1.0],
+            "min_samples_split": [2, 5]
         },
         "LightGBM": {
-            "n_estimators": [500, 1000],
-            "learning_rate": [0.05, 0.1],
-            "num_leaves": [20, 31, 40]
+            "n_estimators": [1000, 1500],
+            "learning_rate": [0.01, 0.05, 0.1],
+            "num_leaves": [31, 50, 70],
+            "max_depth": [7, 10, -1],
+            "class_weight": ["balanced"],
+            "boosting_type": ["gbdt", "dart"]
         }
     }
 
@@ -73,8 +82,8 @@ class Config:
     
     # GridSearch 的設定
     CV_FOLDS = 5  # 交叉驗證折數 (5折通常是個好起點)
-    # F1-Score 是一個在不平衡數據集上比 Accuracy 更可靠的指標
-    GRID_SEARCH_SCORING_METRIC = 'f1'
+    # 使用 macro-averaged F1-score，適合多分類問題
+    GRID_SEARCH_SCORING_METRIC = 'f1_macro'
 
     # --- 4. 模型解釋與報告設定 ---
     N_FEATURES_TO_DISPLAY = 20
@@ -108,14 +117,27 @@ class ExoplanetDataProcessor:
 
     def prepare_data(self):
         self.df.replace([np.inf, -np.inf], np.nan, inplace=True)
-        candidate_df = self.df[self.df['disposition'] == 'CANDIDATE'].copy()
-        self.candidate_info = candidate_df[['source_id', 'source_telescope']].copy()
-        training_df = self.df[self.df['disposition'].isin(['CONFIRMED', 'FALSE POSITIVE'])].copy()
+        
+        # 使用所有數據進行訓練
+        training_df = self.df.copy()
+        
         if training_df.empty:
+            print("❌ 錯誤：沒有找到訓練資料。")
             return False
-        training_df['disposition'] = training_df['disposition'].map({'CONFIRMED': 1, 'FALSE POSITIVE': 0})
+            
+        # 將 disposition 轉換為數值標籤
+        disposition_map = {
+            'CONFIRMED': 2,
+            'CANDIDATE': 1,
+            'FALSE POSITIVE': 0
+        }
+        training_df['disposition'] = training_df['disposition'].map(disposition_map)
+        
+        # 保存標籤映射關係，用於後續報告
+        self.label_map = {v: k for k, v in disposition_map.items()}
+        
+        # One-hot encoding for telescope
         training_df = pd.get_dummies(training_df, columns=['source_telescope'], drop_first=True)
-        candidate_df = pd.get_dummies(candidate_df, columns=['source_telescope'], drop_first=True)
         X = training_df.drop(columns=['disposition', 'source_id'])
         y = training_df['disposition']
         self.feature_names = X.columns.tolist()
@@ -273,7 +295,7 @@ if __name__ == "__main__":
     # 5. 產生最佳模型的評估報告
     print("\n📋 正在為最佳模型生成測試集評估報告...")
     y_pred = best_model.predict(processor.X_test_scaled)
-    target_names = ['FALSE POSITIVE', 'CONFIRMED']
+    target_names = ['FALSE POSITIVE', 'CANDIDATE', 'CONFIRMED']
     report = classification_report(processor.y_test, y_pred, target_names=target_names, output_dict=True)
     cm = confusion_matrix(processor.y_test, y_pred)
     model_stats = {
