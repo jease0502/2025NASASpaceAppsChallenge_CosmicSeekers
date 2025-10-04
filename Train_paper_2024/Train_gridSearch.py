@@ -66,16 +66,36 @@ class Config:
             "num_leaves": [31],
             "max_depth": [7],
             "class_weight": ["balanced"],
-            "boosting_type": ["gbdt"]
+            "boosting_type": ["gbdt"],
+            "objective": ["multiclass"],
+            "num_class": [3]
         }
     }
 
     # 建立模型實例 (不帶參數，參數由 GridSearch 提供)
     MODELS_TO_TUNE = {
-        "LogisticRegression": LogisticRegression(random_state=RANDOM_STATE, class_weight='balanced'),
-        "RandomForest": RandomForestClassifier(random_state=RANDOM_STATE, class_weight='balanced'),
-        "GradientBoosting": GradientBoostingClassifier(random_state=RANDOM_STATE),
-        "LightGBM": LGBMClassifier(random_state=RANDOM_STATE, verbosity=-1, class_weight='balanced')
+        "LogisticRegression": LogisticRegression(
+            random_state=RANDOM_STATE,
+            class_weight='balanced',
+            multi_class='multinomial'  # 確保使用多項式分類
+        ),
+        "RandomForest": RandomForestClassifier(
+            random_state=RANDOM_STATE,
+            class_weight='balanced',
+            n_jobs=1  # 避免記憶體問題
+        ),
+        "GradientBoosting": GradientBoostingClassifier(
+            random_state=RANDOM_STATE,
+            loss='log_loss'  # 適用於多分類
+        ),
+        "LightGBM": LGBMClassifier(
+            random_state=RANDOM_STATE,
+            verbosity=-1,
+            class_weight='balanced',
+            objective='multiclass',  # 多分類設置
+            num_class=3,
+            n_jobs=1  # 避免記憶體問題
+        )
     }
     
     # GridSearch 的設定
@@ -248,16 +268,60 @@ class ModelInterpreter:
             print(f"   - ℹ️ 模型 {model_name} 不支援 'feature_importances_' 屬性。")
 
     def explain_with_shap(self, X_train, y_train, X_test_sample, n_features):
-        print(f"\n🔮 正在為 '{self.model.__class__.__name__}' 產生 SHAP 解釋圖...")
-        if 'predict_proba' in dir(self.model):
-            explainer = shap.KernelExplainer(self.model.predict_proba, X_test_sample)
-            shap_values = explainer.shap_values(X_test_sample)
-            shap.summary_plot(shap_values[1], X_test_sample, feature_names=self.feature_names, max_display=n_features, show=False)
-        else:
-            explainer = shap.Explainer(self.model, X_test_sample)
-            shap_values = explainer(X_test_sample)
-            shap.summary_plot(shap_values, X_test_sample, feature_names=self.feature_names, max_display=n_features, show=False)
-        plt.title(f'SHAP 特徵影響力分析 ({self.model.__class__.__name__})', fontsize=16); plt.tight_layout(); plt.show()
+        model_name = self.model.__class__.__name__
+        print(f"\n🔮 正在為 '{model_name}' 產生 SHAP 解釋圖...")
+        
+        try:
+            if hasattr(self.model, 'feature_importances_'):
+                # 對於樹模型，使用 TreeExplainer
+                explainer = shap.TreeExplainer(self.model)
+                shap_values = explainer.shap_values(X_test_sample)
+                
+                # 為每個類別生成單獨的 SHAP 圖
+                class_names = ['FALSE POSITIVE', 'CANDIDATE', 'CONFIRMED']
+                for i, class_name in enumerate(class_names):
+                    print(f"\n   分析類別: {class_name}")
+                    plt.figure(figsize=(12, 8))
+                    
+                    # 使用 bar plot 而不是 beeswarm plot，避免形狀不匹配的問題
+                    shap.summary_plot(
+                        shap_values[i] if isinstance(shap_values, list) else shap_values,
+                        X_test_sample,
+                        feature_names=self.feature_names,
+                        max_display=n_features,
+                        plot_type="bar",
+                        show=False
+                    )
+                    plt.title(f'SHAP 特徵影響力分析 - {class_name} ({model_name})', fontsize=16)
+                    plt.tight_layout()
+                    plt.show()
+                    plt.close()
+            else:
+                # 對於其他模型，使用 KernelExplainer
+                explainer = shap.KernelExplainer(self.model.predict_proba, shap.sample(X_train, 100))
+                shap_values = explainer.shap_values(X_test_sample)
+                
+                for i, class_name in enumerate(['FALSE POSITIVE', 'CANDIDATE', 'CONFIRMED']):
+                    print(f"\n   分析類別: {class_name}")
+                    plt.figure(figsize=(12, 8))
+                    shap.summary_plot(
+                        shap_values[i],
+                        X_test_sample,
+                        feature_names=self.feature_names,
+                        max_display=n_features,
+                        plot_type="bar",
+                        show=False
+                    )
+                    plt.title(f'SHAP 特徵影響力分析 - {class_name} ({model_name})', fontsize=16)
+                    plt.tight_layout()
+                    plt.show()
+                    plt.close()
+            
+            print(f"   ✅ SHAP 分析完成")
+            
+        except Exception as e:
+            print(f"   ❌ SHAP 分析時發生錯誤: {str(e)}")
+            print("   跳過 SHAP 分析，繼續執行其他步驟...")
 
 
 # --- 主執行流程 (已重構) ---
