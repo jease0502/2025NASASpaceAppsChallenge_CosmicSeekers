@@ -42,33 +42,31 @@ class Config:
     # 警告：網格越大，搜尋時間越長！以下是供快速測試用的小網格。
     PARAM_GRIDS = {
         "LogisticRegression": {
-            "C": [0.1, 0.5, 1.0, 2.0],
-            "solver": ["lbfgs", "saga"],
+            "C": [0.1, 1.0],
+            "solver": ["saga"],
             "max_iter": [3000],
             "multi_class": ["multinomial"],
             "penalty": ["l2"]
         },
         "RandomForest": {
-            "n_estimators": [500, 1000],
-            "max_depth": [10, 15, None],
-            "min_samples_split": [2, 5],
-            "min_samples_leaf": [1, 2],
-            "class_weight": ["balanced", "balanced_subsample"]
+            "n_estimators": [500],
+            "max_depth": [10, None],
+            "min_samples_split": [5],
+            "class_weight": ["balanced"]
         },
         "GradientBoosting": {
-            "n_estimators": [500, 1000],
-            "learning_rate": [0.01, 0.05, 0.1],
-            "max_depth": [5, 7],
-            "subsample": [0.8, 1.0],
-            "min_samples_split": [2, 5]
+            "n_estimators": [500],
+            "learning_rate": [0.1],
+            "max_depth": [5],
+            "subsample": [0.8]
         },
         "LightGBM": {
-            "n_estimators": [1000, 1500],
-            "learning_rate": [0.01, 0.05, 0.1],
-            "num_leaves": [31, 50, 70],
-            "max_depth": [7, 10, -1],
+            "n_estimators": [1000],
+            "learning_rate": [0.1],
+            "num_leaves": [31],
+            "max_depth": [7],
             "class_weight": ["balanced"],
-            "boosting_type": ["gbdt", "dart"]
+            "boosting_type": ["gbdt"]
         }
     }
 
@@ -196,8 +194,9 @@ class HyperparameterTuner:
                 param_grid=param_grid,
                 cv=Config.CV_FOLDS,
                 scoring=Config.GRID_SEARCH_SCORING_METRIC,
-                n_jobs=-1,  # 使用所有可用的 CPU 核心
-                verbose=1   # 顯示進度
+                n_jobs=1,   # 改用單線程以避免記憶體問題
+                verbose=2,  # 顯示更詳細的進度
+                pre_dispatch='2*n_jobs'  # 限制並行作業數量
             )
             grid_search.fit(self.X_train, self.y_train)
             

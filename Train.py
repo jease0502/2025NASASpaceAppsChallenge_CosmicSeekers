@@ -45,11 +45,21 @@ def run_training_pipeline(model_choice: str, custom_params: dict, input_csv_path
         df = pd.read_csv(input_csv_path, dtype={'source_id': str})
         df.replace([np.inf, -np.inf], np.nan, inplace=True)
         
-        training_df = df[df['disposition'].isin(['CONFIRMED', 'FALSE POSITIVE'])].copy()
+        # 使用所有標籤進行三元分類
+        disposition_map = {
+            'CONFIRMED': 2,
+            'CANDIDATE': 1,
+            'FALSE POSITIVE': 0
+        }
+        training_df = df[df['disposition'].isin(disposition_map.keys())].copy()
         if training_df.empty:
-            raise ValueError("提供的資料集中沒有 'CONFIRMED' 或 'FALSE POSITIVE' 標籤的資料。")
+            raise ValueError("提供的資料集中沒有可用的標籤資料。")
 
-        training_df['disposition'] = training_df['disposition'].map({'CONFIRMED': 1, 'FALSE POSITIVE': 0})
+        # 顯示類別分布
+        print("\n類別分布：")
+        print(training_df['disposition'].value_counts())
+        
+        training_df['disposition'] = training_df['disposition'].map(disposition_map)
         
         if 'source_telescope' in training_df.columns:
             training_df = pd.get_dummies(training_df, columns=['source_telescope'], drop_first=True)
@@ -73,10 +83,48 @@ def run_training_pipeline(model_choice: str, custom_params: dict, input_csv_path
 
         # --- 2. Model Configuration ---
         MODELS_CONFIG = {
-            "LogisticRegression": {"model": LogisticRegression, "params": {"random_state": 42, "class_weight": "balanced", "max_iter": 5000}},
-            "RandomForest": {"model": RandomForestClassifier, "params": {"random_state": 42, "class_weight": "balanced"}},
-            "GradientBoosting": {"model": GradientBoostingClassifier, "params": {"random_state": 42}},
-            "LightGBM": {"model": LGBMClassifier, "params": {"random_state": 42, "verbosity": -1, "class_weight": "balanced"}}
+            "LogisticRegression": {
+                "model": LogisticRegression,
+                "params": {
+                    "random_state": 42,
+                    "class_weight": "balanced",
+                    "max_iter": 5000,
+                    "multi_class": "multinomial",  # 多分類設置
+                    "solver": "lbfgs"
+                }
+            },
+            "RandomForest": {
+                "model": RandomForestClassifier,
+                "params": {
+                    "random_state": 42,
+                    "class_weight": "balanced",
+                    "n_estimators": 1000,
+                    "max_depth": 15
+                }
+            },
+            "GradientBoosting": {
+                "model": GradientBoostingClassifier,
+                "params": {
+                    "random_state": 42,
+                    "n_estimators": 1000,
+                    "learning_rate": 0.05,
+                    "max_depth": 7
+                }
+            },
+            "LightGBM": {
+                "model": LGBMClassifier,
+                "params": {
+                    "random_state": 42,
+                    "verbosity": -1,
+                    "class_weight": "balanced",
+                    "n_estimators": 1000,
+                    "learning_rate": 0.05,
+                    "num_leaves": 50,
+                    "max_depth": 7,
+                    "objective": "multiclass",  # 多分類設置
+                    "num_class": 3  # 三個類別
+                }
+            }
         }
 
         if model_choice not in MODELS_CONFIG:
@@ -94,26 +142,39 @@ def run_training_pipeline(model_choice: str, custom_params: dict, input_csv_path
         
         # --- 4. Evaluation and Reporting ---
         print("\n📋 產生模型在測試集上的表現報告...")
-        target_names = ['FALSE POSITIVE', 'CONFIRMED']
+        target_names = ['FALSE POSITIVE', 'CANDIDATE', 'CONFIRMED']
         y_pred = model.predict(X_test_scaled)
-        report = classification_report(y_test, y_pred, target_names=target_names, output_dict=False)
+        report = classification_report(y_test, y_pred, target_names=target_names, output_dict=True)
         cm = confusion_matrix(y_test, y_pred)
         
-        # ### 修改開始 ###：將混淆矩陣打包成字典以供回傳
+        # 將混淆矩陣打包成字典以供回傳
         confusion_matrix_data = {
             "matrix": cm.tolist(),  # 將 numpy array 轉為 python list
             "labels": target_names
         }
         print("✅ 混淆矩陣資料已產生。")
-        # ### 修改結束 ###
 
-        print("\n--- 分類報告 ---")
-        print(report)
-        print("\n--- 混淆矩陣 ---")
-        print(f"{'':<15} | {'預測為非行星':<15} | {'預測為行星':<15}")
-        print("-" * 50)
-        print(f"{'實際為非行星':<15} | {cm[0][0]:<15} | {cm[0][1]:<15}")
-        print(f"{'實際為行星':<15} | {cm[1][0]:<15} | {cm[1][1]:<15}")
+        # 計算每個類別的性能指標
+        print("\n=== 分類報告 ===")
+        for class_name in target_names:
+            metrics = report[class_name]
+            print(f"\n{class_name}:")
+            print(f"  精確度: {metrics['precision']:.3f}")
+            print(f"  召回率: {metrics['recall']:.3f}")
+            print(f"  F1分數: {metrics['f1-score']:.3f}")
+        
+        print(f"\n整體準確度: {report['accuracy']:.3f}")
+        print(f"Macro avg F1: {report['macro avg']['f1-score']:.3f}")
+        print(f"Weighted avg F1: {report['weighted avg']['f1-score']:.3f}")
+
+        print("\n=== 混淆矩陣 ===")
+        print("預測類別:")
+        print(f"{'實際類別':<15} | {'FALSE POSITIVE':<15} | {'CANDIDATE':<15} | {'CONFIRMED':<15}")
+        print("-" * 65)
+        for i, class_name in enumerate(target_names):
+            row = [f"{class_name:<15}"]
+            row.extend([f"{cm[i][j]:<15}" for j in range(3)])
+            print(" | ".join(row))
         
         # --- 5. Saving Artifacts (for potential debug) and preparing for return ---
         model_dir = "temp_models"

@@ -94,14 +94,21 @@ def load_processed_data(csv_path: Path) -> pd.DataFrame:
 
 
 def filter_labeled_data(df: pd.DataFrame) -> pd.DataFrame:
-    """只保留 CONFIRMED 與 FALSE POSITIVE，建立二元標籤。"""
-    label_map = {"CONFIRMED": 1, "FALSE POSITIVE": 0}
+    """使用所有標籤（CONFIRMED、CANDIDATE、FALSE POSITIVE）進行三元分類。"""
+    label_map = {
+        "CONFIRMED": 2,
+        "CANDIDATE": 1,
+        "FALSE POSITIVE": 0
+    }
     out = df[df["disposition"].isin(label_map)].copy()
     out["label"] = out["disposition"].map(label_map)
     # 去重：同一顆星/多顆候選的情況，這裡以 row 為單位處理（每個 source_id 作為一個樣本）
     out = out.reset_index(drop=True)
     # 建立樣本 id（穩定的）
     out["sample_id"] = out.index.astype(int)
+    # 打印類別分布
+    print("類別分布：")
+    print(out["disposition"].value_counts())
     return out
 
 
@@ -351,10 +358,11 @@ def extract_tsfresh_features(ts_long: pd.DataFrame, comprehensive: bool = False)
 
 
 def train_and_eval(X: pd.DataFrame, y: np.ndarray, out_dir: Path) -> Dict:
-    """訓練 LightGBM 並輸出評估報告。"""
+    """訓練 LightGBM 並輸出評估報告（三元分類版本）。"""
     # 檢查類別分佈
     unique_classes, counts = np.unique(y, return_counts=True)
-    print(f"  類別分佈: {dict(zip(unique_classes, counts))}")
+    class_names = ['FALSE POSITIVE', 'CANDIDATE', 'CONFIRMED']
+    print(f"  類別分佈: {dict(zip(class_names, counts))}")
     
     # 檢查樣本量是否足夠
     total_samples = len(y)
@@ -385,9 +393,9 @@ def train_and_eval(X: pd.DataFrame, y: np.ndarray, out_dir: Path) -> Dict:
         print(f"  小樣本模式：n_estimators={n_estimators}, learning_rate={learning_rate}, max_depth={max_depth}")
     else:
         # 正常樣本：使用標準參數
-        n_estimators = 600
+        n_estimators = 1000  # 增加樹的數量以處理多分類
         learning_rate = 0.05
-        max_depth = -1
+        max_depth = 7  # 增加深度以捕捉更複雜的模式
         print(f"  標準模式：n_estimators={n_estimators}, learning_rate={learning_rate}, max_depth={max_depth}")
 
     pipe = Pipeline(steps=[
@@ -396,33 +404,57 @@ def train_and_eval(X: pd.DataFrame, y: np.ndarray, out_dir: Path) -> Dict:
             n_estimators=n_estimators,
             learning_rate=learning_rate,
             max_depth=max_depth,
-            subsample=0.9,
+            subsample=0.8,
             colsample_bytree=0.8,
             random_state=42,
-            n_jobs=-1,
-            verbose=-1,  # 減少輸出
-            class_weight='balanced'
+            n_jobs=1,  # 使用單線程避免記憶體問題
+            verbose=-1,
+            class_weight='balanced',
+            objective='multiclass',  # 多分類設置
+            num_class=3  # 三個類別
         )),
     ])
 
     pipe.fit(X_train, y_train)
-    y_proba = pipe.predict_proba(X_test)[:, 1]
     y_pred = pipe.predict(X_test)
+    y_proba = pipe.predict_proba(X_test)
 
-    auc = float(roc_auc_score(y_test, y_proba))
-    report = classification_report(y_test, y_pred, output_dict=True)
+    # 計算每個類別的 ROC AUC（one-vs-rest）
+    auc_scores = []
+    for i in range(3):
+        try:
+            auc = float(roc_auc_score((y_test == i).astype(int), y_proba[:, i]))
+            auc_scores.append(auc)
+        except Exception:
+            auc_scores.append(float('nan'))
+    
+    # 使用 macro-averaged 指標
+    report = classification_report(
+        y_test, y_pred,
+        target_names=class_names,
+        output_dict=True
+    )
 
     # 存結果
     out_dir.mkdir(parents=True, exist_ok=True)
     with open(out_dir / "train_report.json", "w") as f:
         json.dump({
-            "auc": auc,
+            "auc_scores": {
+                "FALSE_POSITIVE": float(auc_scores[0]),
+                "CANDIDATE": float(auc_scores[1]),
+                "CONFIRMED": float(auc_scores[2])
+            },
             "report": report,
             "n_train": int(len(y_train)),
             "n_test": int(len(y_test)),
             "n_features": int(X.shape[1]),
             "total_samples": int(total_samples),
-            "min_class_samples": int(min_samples)
+            "min_class_samples": int(min_samples),
+            "class_distribution": {
+                "FALSE_POSITIVE": int(counts[0]),
+                "CANDIDATE": int(counts[1]),
+                "CONFIRMED": int(counts[2])
+            }
         }, f, indent=2)
 
     # 也存模型（joblib）
@@ -432,7 +464,10 @@ def train_and_eval(X: pd.DataFrame, y: np.ndarray, out_dir: Path) -> Dict:
     except Exception:
         pass
 
-    return {"auc": auc, "report": report}
+    return {
+        "auc_scores": dict(zip(class_names, auc_scores)),
+        "report": report
+    }
 
 
 # =============== 主流程 ===============
@@ -520,9 +555,19 @@ def main():
     if X.shape[1] == 0:
         raise ValueError("沒有可用的數值特徵進行訓練")
 
-    print("[5/6] 訓練與評估 LightGBM ...")
+    print("[5/6] 訓練與評估 LightGBM（三元分類）...")
     metrics = train_and_eval(X, y, out_dir)
-    print(f"  AUC = {metrics['auc']:.3f}")
+    print("\n各類別 AUC 分數：")
+    for class_name, auc in metrics['auc_scores'].items():
+        print(f"  {class_name}: {auc:.3f}")
+    
+    print("\n分類報告：")
+    for class_name in ['FALSE POSITIVE', 'CANDIDATE', 'CONFIRMED']:
+        class_metrics = metrics['report'][class_name]
+        print(f"\n{class_name}:")
+        print(f"  精確度: {class_metrics['precision']:.3f}")
+        print(f"  召回率: {class_metrics['recall']:.3f}")
+        print(f"  F1分數: {class_metrics['f1-score']:.3f}")
 
     print("[6/6] 輸出檔案 ...")
     out_dir.mkdir(parents=True, exist_ok=True)
