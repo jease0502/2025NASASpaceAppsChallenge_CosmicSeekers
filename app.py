@@ -158,8 +158,8 @@ def run_training_route():
                 else: hyperparameters[key] = float_val
             except (ValueError, TypeError): pass
 
-        # ### 修改開始 ###: 接收 Train.py 回傳的物件，包含混淆矩陣
-        output_path, log_output, trained_artifacts, confusion_matrix_data = run_training_pipeline(model_choice, hyperparameters, sanitized_path)
+        # ### 修改開始 ###: 接收 Train.py 回傳的物件，包含混淆矩陣、分類報告與準確度
+        output_path, log_output, trained_artifacts, confusion_matrix_data, classification_report_data, accuracy_value = run_training_pipeline(model_choice, hyperparameters, sanitized_path)
 
         if trained_artifacts and trained_artifacts.get("model"):
             # 將訓練好的物件存到記憶體中的 LATEST_TRAINED_ARTIFACTS
@@ -172,9 +172,11 @@ def run_training_route():
 
         return jsonify({
             'success': True,
-            'message': f'模型 {model_choice} 訓練體驗完成！',
+            'message': f'Model {model_choice} Training Completed!',
             'log_output': log_output,
-            'confusion_matrix': confusion_matrix_data # <<< 新增：將混淆矩陣回傳給前端
+            'confusion_matrix': confusion_matrix_data,  # 回傳混淆矩陣
+            'classification_report': classification_report_data,  # 回傳分類報告（含每類 precision/recall/f1）
+            'accuracy': accuracy_value  # 回傳整體準確度
         })
     except Exception as e:
         traceback.print_exc()
@@ -223,10 +225,19 @@ def predict():
         
         probabilities = model.predict_proba(df_scaled)
         predictions = []
+        # 通用三類/二類預測：使用 classes_ 與最大機率為信心值
+        target_map = {0: "FALSE POSITIVE", 1: "CANDIDATE", 2: "CONFIRMED"}
+        classes = list(getattr(model, 'classes_', []))
         for prob in probabilities:
-            confidence = prob[1]
-            prediction_label = "CONFIRMED" if confidence >= 0.5 else "FALSE POSITIVE"
-            predictions.append({"prediction": prediction_label, "confidence": np.float64(confidence)})
+            idx = int(np.argmax(prob))
+            conf = float(prob[idx])
+            raw_label = classes[idx] if classes else idx
+            if isinstance(raw_label, (int, np.integer)):
+                label_text = target_map.get(int(raw_label), str(raw_label))
+            else:
+                # 若模型直接以文字類別訓練（少見），則直接沿用
+                label_text = str(raw_label)
+            predictions.append({"prediction": label_text, "confidence": conf})
             
         return jsonify(predictions)
     except Exception as e:
@@ -271,4 +282,6 @@ def download_demo(filename):
     return send_from_directory('static/demo', filename)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # On Windows, Flask's debug reloader can restart unexpectedly during training (joblib/loky).
+    # Disable debug and auto-reloader to keep long-running training stable.
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)

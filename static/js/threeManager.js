@@ -172,7 +172,8 @@ export const ThreeManager = {
                     const planetRadius = data.planet_radius > 0 ? data.planet_radius : 1.0;
                     const period = data.period > 0 ? data.period : 365.0;
                     const planetRadiusInSolarRadii = (planetRadius / 109.2);
-                    const planetFinalScale = starFinalScale * Math.pow(planetRadiusInSolarRadii, 0.5) / Math.pow(stellarRadius, 0.5) * 8;
+                    // Fixed: Reduced scaling factor from 8 to 0.8 to make planets smaller than stars
+                    const planetFinalScale = starFinalScale * Math.pow(planetRadiusInSolarRadii, 0.5) / Math.pow(stellarRadius, 0.5) * 0.8;
                     planetGroup.scale.setScalar(isNaN(planetFinalScale) ? 0.1 : planetFinalScale);
                     const baseOrbitRadius = starFinalScale * 4;
                     const orbitParams = { radius: baseOrbitRadius + 2.5 * Math.pow(period, 0.6), speed: (1 / Math.pow(period, 0.5)) / 8, start_angle: Math.random() * Math.PI * 2 };

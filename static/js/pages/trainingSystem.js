@@ -54,6 +54,55 @@ function renderHyperparameterForm(modelName, container) {
     }, { signal: localState.eventController.signal });
 }
 
+function renderClassificationReport(report) {
+    if (!report || typeof report !== 'object') return '';
+    const classes = ['FALSE POSITIVE', 'CANDIDATE', 'CONFIRMED'];
+    const rows = classes.map(cls => {
+        const m = report[cls] || { precision: 0, recall: 0, ['f1-score']: 0, support: 0 };
+        return `<tr>
+            <th class="cm-label">${cls}</th>
+            <td class="cm-cell">${(m.precision ?? 0).toFixed(3)}</td>
+            <td class="cm-cell">${(m.recall ?? 0).toFixed(3)}</td>
+            <td class="cm-cell">${(m['f1-score'] ?? 0).toFixed(3)}</td>
+            <td class="cm-cell">${m.support ?? 0}</td>
+        </tr>`;
+    }).join('');
+
+    const macro = report['macro avg'] || {}; const weighted = report['weighted avg'] || {}; const accuracy = report['accuracy'];
+    const summary = `
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+            <div class="p-3 rounded-lg bg-[#2E2E2E]/50 border border-white/10">
+                <div class="text-sm text-gray-400">Accuracy</div>
+                <div class="text-xl font-bold">${(accuracy ?? 0).toFixed(3)}</div>
+            </div>
+            <div class="p-3 rounded-lg bg-[#2E2E2E]/50 border border-white/10">
+                <div class="text-sm text-gray-400">Macro F1</div>
+                <div class="text-xl font-bold">${(macro['f1-score'] ?? 0).toFixed(3)}</div>
+            </div>
+            <div class="p-3 rounded-lg bg-[#2E2E2E]/50 border border-white/10">
+                <div class="text-sm text-gray-400">Weighted F1</div>
+                <div class="text-xl font-bold">${(weighted['f1-score'] ?? 0).toFixed(3)}</div>
+            </div>
+        </div>`;
+
+    return `
+        <div class="mt-6">
+            <h4 class="text-sm font-bold text-gray-400 mb-2">Training Evaluation (Classification Report)</h4>
+            ${summary}
+            <table class="confusion-matrix-table mt-3">
+                <tr>
+                    <th class="cm-header cm-header-actual"><span>Class</span></th>
+                    <th class="cm-label">Precision</th>
+                    <th class="cm-label">Recall</th>
+                    <th class="cm-label">F1-Score</th>
+                    <th class="cm-label">Support</th>
+                </tr>
+                ${rows}
+            </table>
+        </div>
+    `;
+}
+
 function renderConfusionMatrix(matrixData) {
     if (!matrixData || !Array.isArray(matrixData.matrix)) return '<p>Unable to display confusion matrix.</p>';
     const matrix = matrixData.matrix;
@@ -177,6 +226,7 @@ export const TrainingSystem = {
                     trainingResultContainer.innerHTML = `
                         <h4 class="text-lg font-bold text-green-400 mb-2">✓ ${result.message}</h4>
                         ${renderConfusionMatrix(result.confusion_matrix)}
+                        ${renderClassificationReport(result.classification_report || { accuracy: result.accuracy })}
                     `;
                 } else {
                     trainingResultContainer.innerHTML = `<h4 class="text-lg font-bold text-red-400 mb-2">✗ Training failed</h4><p class="text-xs text-gray-400">${result.details || result.error}</p>`;

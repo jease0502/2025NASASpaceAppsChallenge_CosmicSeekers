@@ -1,60 +1,48 @@
 {
-    "model_name": "Lightgbm",
-    "classification_report": {
-        "FALSE POSITIVE": {
-            "precision": 0.9340241065764432,
-            "recall": 0.9034567396195541,
-            "f1-score": 0.9184861717612809,
-            "support": 4889.0
-        },
-        "CANDIDATE": {
-            "precision": 0.922037250700511,
-            "recall": 0.9244752933399438,
-            "f1-score": 0.9232546624855588,
-            "support": 6051.0
-        },
-        "CONFIRMED": {
-            "precision": 0.9110929853181077,
-            "recall": 0.9482173174872666,
-            "f1-score": 0.9292845257903494,
-            "support": 3534.0
-        },
-        "accuracy": 0.9231725853254111,
-        "macro avg": {
-            "precision": 0.9223847808650206,
-            "recall": 0.925383116815588,
-            "f1-score": 0.9236751200123964,
-            "support": 14474.0
-        },
-        "weighted avg": {
-            "precision": 0.9234139747930921,
-            "recall": 0.9231725853254111,
-            "f1-score": 0.92311623397707,
-            "support": 14474.0
-        }
+  "model_name": "Lightgbm",
+  "classification_report": {
+    "FALSE POSITIVE": {
+      "precision": 0.9762105263157895,
+      "recall": 0.9484557169155247,
+      "f1-score": 0.9621330013486877,
+      "support": 4889.0
     },
-    "confusion_matrix": {
-        "labels": [
-            "FALSE POSITIVE",
-            "CANDIDATE",
-            "CONFIRMED"
-        ],
-        "matrix": [
-            [
-                4417,
-                330,
-                142
-            ],
-            [
-                272,
-                5594,
-                185
-            ],
-            [
-                40,
-                143,
-                3351
-            ]
-        ]
+    "CANDIDATE": {
+      "precision": 0.966754443712969,
+      "recall": 0.9707486365889936,
+      "f1-score": 0.9687474231054671,
+      "support": 6051.0
+    },
+    "CONFIRMED": {
+      "precision": 0.9594298245614035,
+      "recall": 0.9903791737408036,
+      "f1-score": 0.9746588693957114,
+      "support": 3534.0
+    },
+    "accuracy": 0.9680116070194832,
+    "macro avg": {
+      "precision": 0.967464931530054,
+      "recall": 0.9698611757484406,
+      "f1-score": 0.9685130979499554,
+      "support": 14474.0
+    },
+    "weighted avg": {
+      "precision": 0.9681601079221412,
+      "recall": 0.9680116070194832,
+      "f1-score": 0.9679565666194113,
+      "support": 14474.0
     }
+  },
+  "confusion_matrix": {
+    "labels": [
+      "FALSE POSITIVE",
+      "CANDIDATE",
+      "CONFIRMED"
+    ],
+    "matrix": [
+      [4637, 176, 76],
+      [105, 5874, 72],
+      [8, 26, 3500]
+    ]
+  }
 }

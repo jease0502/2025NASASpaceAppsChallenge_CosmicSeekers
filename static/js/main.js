@@ -13,6 +13,13 @@ export const availableModels = { "random_forest": "Random Forest", "gradient_boo
 export const AppState = { currentPage: null, systems: [], activeSystemIndex: 0, activePageLogic: null, canNavigate: true, allSystemsList: null, latestTrainedModelName: null, };
 const PageLogic = { main: MainExplorer, dashboard: Dashboard, kepler: Kepler, training_system: TrainingSystem, tutorial: Tutorial };
 
+function closeModelStatsModal() {
+    const modal = document.getElementById('model-stats-modal');
+    if (modal) {
+        modal.classList.remove('visible');
+    }
+}
+
 function getNavConfig(currentSystem) {
     const navItems = [
         { type: 'link', label: 'Tutorial', icon: 'school', action: 'navigate', target: 'tutorial' },
@@ -30,7 +37,8 @@ function getNavConfig(currentSystem) {
 function getPlanetMusicTrack(planet) { if (!planet || planet.equilibrium_temp === null) return 'planet_rocky'; const temp = planet.equilibrium_temp; if (temp < 200) return 'planet_ice'; if (temp < 400) return 'planet_earthlike'; if (temp > 1000) return 'planet_lava'; return 'planet_rocky'; }
 
 async function handleStateChange(action, payload) {
-    if (!AppState.canNavigate && !['focus_system', 'explore_specific'].includes(action)) return;
+    // Allow returning to main even during transition gating
+    if (!AppState.canNavigate && !['focus_system', 'explore_specific', 'return_to_main'].includes(action)) return;
     if (['navigate', 'explore_initial', 'return_to_main', 'explore_specific'].includes(action)) { AppState.canNavigate = false; }
     const pageContainer = DOMElements.pageContainer;
     const scrollablePages = ['tutorial', 'training_system'];
@@ -52,11 +60,11 @@ async function handleStateChange(action, payload) {
         AppState.activePageLogic = null; 
     }
     switch (action) {
-        case 'navigate': const activeSystem = AppState.systems[AppState.activeSystemIndex]; if (payload.target === 'kepler') { AudioManager.playMusic('kepler'); } else if (payload.target === 'tutorial') { AudioManager.playMusic('start'); } else { const track = getPlanetMusicTrack(activeSystem?.planets?.[0]); AudioManager.playMusic(track); } if (AppState.currentPage === 'training_system') { AppState.latestTrainedModelName = null; } await UIManager.transitionToPage(payload.target, () => { AppState.currentPage = payload.target; AppState.activePageLogic = PageLogic[payload.target]; AppState.activePageLogic.init(payload.target === 'dashboard' || payload.target === 'kepler' ? activeSystem : null, handleStateChange); addNavListeners(); }); break;
+        case 'navigate': closeModelStatsModal(); const activeSystem = AppState.systems[AppState.activeSystemIndex]; if (payload.target === 'kepler') { AudioManager.playMusic('kepler'); } else if (payload.target === 'tutorial') { AudioManager.playMusic('start'); } else { const track = getPlanetMusicTrack(activeSystem?.planets?.[0]); AudioManager.playMusic(track); } if (AppState.currentPage === 'training_system') { AppState.latestTrainedModelName = null; } await UIManager.transitionToPage(payload.target, () => { AppState.currentPage = payload.target; AppState.activePageLogic = PageLogic[payload.target]; AppState.activePageLogic.init(payload.target === 'dashboard' || payload.target === 'kepler' ? activeSystem : null, handleStateChange); addNavListeners(); const backBtn = document.getElementById('back-to-explorer-btn'); if (backBtn) { backBtn.addEventListener('click', (e) => { e.preventDefault(); handleStateChange('return_to_main'); }); } }); break;
         case 'explore_initial': UIManager.showLoadingPrompt(); const threeSystems = await ApiService.getTripleSystemData(); if(threeSystems && threeSystems.length >= 3) { AppState.systems = threeSystems; AppState.activeSystemIndex = 0; const currentSystem = AppState.systems[AppState.activeSystemIndex]; const track = getPlanetMusicTrack(currentSystem.planets?.[0]); AudioManager.playMusic(track); AppState.currentPage = 'main'; AppState.activePageLogic = PageLogic.main; AppState.activePageLogic.init(AppState.systems, handleStateChange); addNavListeners(); } break;
         case 'explore_specific': UIManager.showLoadingPrompt(); const newSystems = await ApiService.getSpecificTripleSystemData(payload.system_id); if(newSystems && newSystems.length >= 3) { AppState.systems = newSystems; AppState.activeSystemIndex = 0; const currentSystem = AppState.systems[AppState.activeSystemIndex]; const track = getPlanetMusicTrack(currentSystem.planets?.[0]); AudioManager.playMusic(track); AppState.currentPage = 'main'; AppState.activePageLogic = PageLogic.main; UIManager.showMainUI(); AppState.activePageLogic.init(AppState.systems, handleStateChange); addNavListeners(); } break;
         case 'focus_system': AppState.activeSystemIndex = payload.index; const newActiveSystem = AppState.systems[AppState.activeSystemIndex]; const newTrack = getPlanetMusicTrack(newActiveSystem.planets?.[0]); AudioManager.playMusic(newTrack); if (AppState.activePageLogic && AppState.activePageLogic.updateForNewSystem) { AppState.activePageLogic.updateForNewSystem(newActiveSystem); } addNavListeners(); break;
-        case 'return_to_main': if (!AppState.systems || AppState.systems.length === 0) { handleStateChange('explore_initial'); return; } const returnTrack = getPlanetMusicTrack(AppState.systems[AppState.activeSystemIndex]?.planets?.[0]); AudioManager.playMusic(returnTrack); if (AppState.currentPage === 'training_system' || AppState.currentPage === 'tutorial') { AppState.latestTrainedModelName = null; } await UIManager.animatePageOut(() => { AppState.currentPage = 'main'; AppState.activePageLogic = PageLogic.main; AppState.activePageLogic.init(AppState.systems, handleStateChange); addNavListeners(); }); break;
+        case 'return_to_main': closeModelStatsModal(); if (!AppState.systems || AppState.systems.length === 0) { await handleStateChange('explore_initial'); return; } const returnTrack = getPlanetMusicTrack(AppState.systems[AppState.activeSystemIndex]?.planets?.[0]); AudioManager.playMusic(returnTrack); if (AppState.currentPage === 'training_system' || AppState.currentPage === 'tutorial') { AppState.latestTrainedModelName = null; } await UIManager.animatePageOut(() => { AppState.currentPage = 'main'; AppState.activePageLogic = PageLogic.main; AppState.activePageLogic.init(AppState.systems, handleStateChange); addNavListeners(); }); break;
         default: AudioManager.playMusic('start'); AppState.currentPage = 'main'; AppState.activePageLogic = PageLogic.main; AppState.activePageLogic.init(null, handleStateChange); addNavListeners();
     }
     setTimeout(() => { AppState.canNavigate = true; }, 800);
@@ -171,6 +179,13 @@ async function main() {
 
     document.addEventListener('click', (e) => {
         const targetElement = e.target;
+        // Ensure "Back to Explorer" works even outside pageContainer delegation
+        const backBtnGlobal = targetElement.closest('#back-to-explorer-btn');
+        if (backBtnGlobal) {
+            e.preventDefault();
+            handleStateChange('return_to_main');
+            return;
+        }
         const navItem = targetElement.closest('[data-action]');
         
         if (navItem) {

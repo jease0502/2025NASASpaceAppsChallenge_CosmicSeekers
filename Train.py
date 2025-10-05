@@ -32,8 +32,10 @@ def run_training_pipeline(model_choice: str, custom_params: dict, input_csv_path
         "feature_names": None
     }
     output_model_path = None
-    # ### 修改開始 ###：初始化混淆矩陣變數
+    # ### 修改開始 ###：初始化混淆矩陣與分類報告變數
     confusion_matrix_data = None
+    classification_report_data = None
+    accuracy_value = None
     # ### 修改結束 ###
 
     try:
@@ -154,6 +156,10 @@ def run_training_pipeline(model_choice: str, custom_params: dict, input_csv_path
         }
         print("✅ 混淆矩陣資料已產生。")
 
+        # 打包分類報告與整體準確度供回傳
+        classification_report_data = report
+        accuracy_value = float(report.get('accuracy', 0.0))
+
         # 計算每個類別的性能指標
         print("\n=== 分類報告 ===")
         for class_name in target_names:
@@ -199,6 +205,6 @@ def run_training_pipeline(model_choice: str, custom_params: dict, input_csv_path
     finally:
         sys.stdout = old_stdout
 
-    # ### 修改開始 ###：回傳 4 個項目，包含打包好的混淆矩陣
-    return output_model_path, captured_output.getvalue(), trained_artifacts, confusion_matrix_data
+    # ### 修改開始 ###：回傳 6 個項目，包含打包好的混淆矩陣與分類報告、準確度
+    return output_model_path, captured_output.getvalue(), trained_artifacts, confusion_matrix_data, classification_report_data, accuracy_value
     # ### 修改結束 ###
